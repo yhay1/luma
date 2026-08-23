@@ -1,6 +1,7 @@
 import { Analytics } from '@vercel/analytics/next'
 import type { Metadata, Viewport } from 'next'
 import './globals.css'
+import { ThemeController } from '@/components/theme-controller'
 
 export const metadata: Metadata = {
   title: 'luma — your circle, closer',
@@ -39,8 +40,9 @@ export default function RootLayout({
   children: React.ReactNode
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" className="dark bg-background">
       <body className="antialiased">
+        <ThemeController />
         {children}
         {process.env.NODE_ENV === 'production' && <Analytics />}
       </body>

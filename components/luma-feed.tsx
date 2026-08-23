@@ -52,7 +52,8 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
       <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 px-4 py-6 md:grid-cols-[190px_minmax(0,640px)_220px] md:px-8">
         <nav className="hidden flex-col gap-2 md:flex" aria-label="Primary navigation">
           <a className="flex items-center gap-3 rounded-xl bg-muted px-4 py-3 text-sm font-medium" href="/app"><Home className="size-4" />Home</a>
-          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="#discover"><Search className="size-4" />Discover</a>
+          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/settings"><Sparkles className="size-4" />Settings</a>
+          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/search"><Search className="size-4" />Discover</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/messages"><MessageCircle className="size-4" />Messages</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/notifications"><Bell className="size-4" />Notifications</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href={profile ? `/app/profile/${profile.username}` : '#profile'}><UserRound className="size-4" />Profile</a>
@@ -67,6 +68,7 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
         </main>
         <aside className="hidden rounded-2xl border border-border bg-card p-5 md:block"><p className="text-xs font-semibold uppercase tracking-[0.18em] text-muted-foreground">A small note</p><p className="mt-4 font-serif text-2xl leading-tight">Good things feel better when they are shared.</p><p className="mt-4 text-sm leading-6 text-muted-foreground">luma is designed for thoughtful updates, not endless scrolling.</p></aside>
       </div>
+      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-border bg-background/95 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden"><a href="/app" aria-label="Home" className="rounded-full p-3 text-primary"><Home className="size-5" /></a><a href="/app/search" aria-label="Search" className="rounded-full p-3 text-muted-foreground"><Search className="size-5" /></a><a href="/app/messages" aria-label="Messages" className="rounded-full p-3 text-muted-foreground"><MessageCircle className="size-5" /></a><a href="/app/notifications" aria-label="Notifications" className="rounded-full p-3 text-muted-foreground"><Bell className="size-5" /></a><a href="/app/settings" aria-label="Settings" className="rounded-full p-3 text-muted-foreground"><Sparkles className="size-5" /></a></nav>
     </div>
   )
 }
