@@ -13,7 +13,7 @@ type Post = {
   liked: boolean
 }
 
-type FeedProps = { posts: Post[]; email: string; profile: { username: string; display_name: string } | null }
+type FeedProps = { posts: Post[]; email: string; profile: { username: string; display_name: string } | null; statusRail?: React.ReactNode }
 
 function relativeTime(date: string) {
   const minutes = Math.max(1, Math.round((Date.now() - new Date(date).getTime()) / 60000))
@@ -22,7 +22,7 @@ function relativeTime(date: string) {
   return `${Math.round(minutes / 1440)}d`
 }
 
-export function LumaFeed({ posts, email, profile }: FeedProps) {
+export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
   const [isPending, startTransition] = useTransition()
   const [optimisticPosts, setOptimisticPosts] = useOptimistic(posts, (state, update: { id: string; liked: boolean }) => state.map((post) => post.id === update.id ? { ...post, liked: update.liked, likes: post.likes + (update.liked ? 1 : -1) } : post))
   const formRef = useRef<HTMLFormElement>(null)
@@ -56,6 +56,7 @@ export function LumaFeed({ posts, email, profile }: FeedProps) {
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href={profile ? `/app/profile/${profile.username}` : '#profile'}><UserRound className="size-4" />Profile</a>
         </nav>
         <main className="flex flex-col gap-5">
+          {statusRail}
           <div><p className="text-sm font-medium text-muted-foreground">Tuesday, August 23</p><h1 className="font-serif text-4xl tracking-tight md:text-5xl">Your circle</h1><p className="mt-2 text-muted-foreground">A quiet place for the people you keep close.</p></div>
           <form ref={formRef} action={publish} className="rounded-2xl border border-border bg-card p-4 shadow-sm"><textarea name="content" required maxLength={5000} rows={3} placeholder="Share something with your circle…" className="w-full resize-none bg-transparent text-base outline-none placeholder:text-muted-foreground" /><div className="mt-3 flex items-center justify-between border-t border-border pt-3"><span className="text-xs text-muted-foreground">Text only · up to 5,000 characters</span><button disabled={isPending} className="flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-medium text-primary-foreground disabled:opacity-50"><Send className="size-4" />{isPending ? 'Posting…' : 'Post'}</button></div></form>
           <section className="flex flex-col gap-3" aria-label="Your feed">
