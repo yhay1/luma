@@ -1,0 +1,3 @@
+import Link from 'next/link'
+import { AuthForm } from '@/components/auth-form'
+export default function LoginPage() { return <main className="flex min-h-screen items-center justify-center px-6"><section className="flex w-full max-w-sm flex-col gap-6"><div><Link href="/" className="font-semibold">luma</Link><h1 className="mt-8 text-3xl font-semibold tracking-tight">Welcome back</h1><p className="mt-2 text-muted-foreground">Log in to continue to your circle.</p></div><AuthForm mode="login" /><p className="text-sm text-muted-foreground">New to luma? <Link href="/auth/sign-up" className="text-foreground underline">Create an account</Link></p></section></main> }
