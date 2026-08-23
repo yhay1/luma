@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { allowAction } from '@/lib/social/rate-limit'
+import { isUuid, boundedText } from '@/lib/social/validation'
 
 const MAX_POST_LENGTH = 5000
 
@@ -10,8 +12,9 @@ export async function createPost(formData: FormData) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Please sign in to post.' }
 
-  const content = String(formData.get('content') ?? '').trim()
-  if (!content || content.length > MAX_POST_LENGTH) return { error: 'Write between 1 and 5,000 characters.' }
+  if (!allowAction(`post:${user.id}`, 20, 60_000)) return { error: 'You are posting too quickly. Try again in a minute.' }
+  const content = boundedText(formData.get('content'), MAX_POST_LENGTH)
+  if (!content) return { error: 'Write between 1 and 5,000 characters.' }
 
   const { error } = await supabase.from('posts').insert({ author_id: user.id, content })
   if (error) return { error: 'We could not publish that post.' }
@@ -22,7 +25,8 @@ export async function createPost(formData: FormData) {
 export async function togglePostLike(postId: string, liked: boolean) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user) return { error: 'Please sign in first.' }
+  if (!user || !isUuid(postId)) return { error: 'That action could not be saved.' }
+  if (!allowAction(`like:${user.id}`, 60, 60_000)) return { error: 'You are moving too quickly. Try again shortly.' }
   const result = liked
     ? await supabase.from('post_likes').delete().eq('post_id', postId).eq('user_id', user.id)
     : await supabase.from('post_likes').insert({ post_id: postId, user_id: user.id })

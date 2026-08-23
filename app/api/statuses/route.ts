@@ -3,6 +3,8 @@
 import { NextResponse } from 'next/server'
 import { randomUUID } from 'node:crypto'
 import { createClient } from '@/lib/supabase/server'
+import { allowAction } from '@/lib/social/rate-limit'
+import { isUuid } from '@/lib/social/validation'
 
 const MAX_BYTES = 5 * 1024 * 1024
 const allowed = new Map([['image/jpeg', 'jpg'], ['image/png', 'png'], ['image/webp', 'webp']])
@@ -18,6 +20,7 @@ export async function POST(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Please sign in first.' }, { status: 401 })
+  if (!allowAction(`status:${user.id}`, 10, 60 * 60_000)) return NextResponse.json({ error: 'You have reached the Status limit for now.' }, { status: 429 })
   const form = await request.formData()
   const file = form.get('image')
   const caption = String(form.get('caption') ?? '').trim()
@@ -42,7 +45,8 @@ export async function DELETE(request: Request) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return NextResponse.json({ error: 'Please sign in first.' }, { status: 401 })
-  const { id } = await request.json()
+  const { id } = await request.json().catch(() => ({}))
+  if (!isUuid(id)) return NextResponse.json({ error: 'Status not found.' }, { status: 404 })
   const { data: status } = await supabase.from('statuses').select('image_path').eq('id', id).eq('author_id', user.id).maybeSingle()
   if (!status) return NextResponse.json({ error: 'Status not found.' }, { status: 404 })
   await supabase.storage.from('statuses').remove([status.image_path])

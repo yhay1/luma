@@ -2,6 +2,8 @@
 
 import { revalidatePath } from 'next/cache'
 import { createClient } from '@/lib/supabase/server'
+import { allowAction } from '@/lib/social/rate-limit'
+import { isUuid, boundedText } from '@/lib/social/validation'
 
 export async function startConversation(otherUserId: string) {
   const supabase = await createClient()
@@ -24,8 +26,9 @@ export async function startConversation(otherUserId: string) {
 export async function sendMessage(conversationId: string, content: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  const clean = content.trim()
-  if (!user || !clean || clean.length > 2000) return { error: 'Message must be between 1 and 2,000 characters.' }
+  const clean = boundedText(content, 2000)
+  if (!user || !isUuid(conversationId) || !clean) return { error: 'Message must be between 1 and 2,000 characters.' }
+  if (!allowAction(`message:${user.id}`, 60, 60_000)) return { error: 'You are sending messages too quickly. Try again shortly.' }
   const { data: member } = await supabase.from('conversation_members').select('conversation_id').eq('conversation_id', conversationId).eq('user_id', user.id).maybeSingle()
   if (!member) return { error: 'Conversation not found.' }
   const { data: message, error } = await supabase.from('messages').insert({ conversation_id: conversationId, sender_id: user.id, content: clean }).select('id, conversation_id, sender_id, content, created_at').single()
