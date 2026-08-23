@@ -21,11 +21,11 @@ Email confirmation is enabled by default in Supabase. Sign up through the app wi
 
 The app expects the existing Luma schema, including profiles, posts, post_likes, comments, comment_likes, follows, notifications, conversations, messages, statuses, status_views, and the private notification preferences table. RLS must remain enabled. The `statuses` Storage bucket must be private, with policies scoped to authenticated users and user-owned paths.
 
-The Status API accepts JPEG, PNG, and WebP images up to 5 MB, validates magic bytes, stores an optional caption up to 280 characters, and expires records after 24 hours. `vercel.json` runs `/api/statuses/cleanup` hourly; set `CRON_SECRET` in every deployed environment. The cleanup route uses the service-role key only on the server and reports partial failures for retry visibility.
+The Status API accepts JPEG, PNG, and WebP images up to 5 MB, validates magic bytes, stores an optional caption up to 280 characters, and expires records after 24 hours. Expired Status cleanup runs best-effort during authenticated feed requests in bounded batches, while the expiry filter hides expired content immediately. The cleanup route remains available for optional manual maintenance and uses the service-role key only on the server. If `CRON_SECRET` is configured, manual requests must include `Authorization: Bearer <CRON_SECRET>`; it is optional when Vercel Cron is disabled.
 
 ## Deployment
 
-Deploy with the Vercel Publish flow or connect the repository through GitHub. Configure all variables from `.env.example`, especially `SUPABASE_SERVICE_ROLE_KEY` and `CRON_SECRET` as server-only secrets. Never expose service-role credentials through `NEXT_PUBLIC_*` variables or client components.
+Deploy with the Vercel Publish flow or connect the repository through GitHub. Configure all variables from `.env.example`, especially `SUPABASE_SERVICE_ROLE_KEY` as a server-only secret. `CRON_SECRET` is not required because Vercel Cron is not used. Never expose service-role credentials through `NEXT_PUBLIC_*` variables or client components.
 
 ## Product boundaries
 

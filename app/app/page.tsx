@@ -2,12 +2,14 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LumaFeed } from '@/components/luma-feed'
 import { StatusRail } from '@/components/status-rail'
+import { cleanupExpiredStatuses } from '@/lib/social/status-cleanup'
 
 export default async function AppPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
+  await cleanupExpiredStatuses(supabase)
   const [{ data: profile }, { data: posts }, { data: statuses }] = await Promise.all([
     supabase.from('profiles').select('username, display_name').eq('id', user.id).maybeSingle(),
     supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(username, display_name), post_likes(user_id)').order('created_at', { ascending: false }).limit(20),

@@ -2,7 +2,10 @@ import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
 export async function POST(request: Request) {
-  if (request.headers.get('authorization') !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  if (process.env.CRON_SECRET) {
+    const authorization = request.headers.get('authorization')
+    if (authorization !== `Bearer ${process.env.CRON_SECRET}`) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+  }
   const supabase = createClient(process.env.SUPABASE_URL!, process.env.SUPABASE_SERVICE_ROLE_KEY!)
   const now = new Date().toISOString()
   const { data: expired, error: selectError } = await supabase.from('statuses').select('id, image_path').lte('expires_at', now).limit(100)

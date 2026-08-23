@@ -1,8 +1,7 @@
 {
-  "crons": [
-    {
-      "path": "/api/statuses/cleanup",
-      "schedule": "0 * * * *"
+  "functions": {
+    "app/api/statuses/cleanup/route.ts": {
+      "maxDuration": 30
     }
-  ]
+  }
 }
