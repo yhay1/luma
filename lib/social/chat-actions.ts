@@ -9,18 +9,10 @@ export async function startConversation(otherUserId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user || !isUuid(otherUserId) || user.id === otherUserId) return { error: 'Unable to start conversation.' }
-  const { data: existing } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', user.id)
-  const ids = (existing ?? []).map((row) => row.conversation_id)
-  if (ids.length) {
-    const { data: match } = await supabase.from('conversation_members').select('conversation_id').in('conversation_id', ids).eq('user_id', otherUserId).maybeSingle()
-    if (match) return { conversationId: match.conversation_id }
-  }
-  const { data: conversation, error } = await supabase.from('conversations').insert({ created_by: user.id }).select('id').single()
-  if (error || !conversation) return { error: 'Unable to start conversation.' }
-  const { error: memberError } = await supabase.from('conversation_members').insert([{ conversation_id: conversation.id, user_id: user.id }, { conversation_id: conversation.id, user_id: otherUserId }])
-  if (memberError) return { error: 'Unable to start conversation.' }
+  const { data: conversationId, error } = await supabase.rpc('start_direct_conversation', { other_user_id: otherUserId })
+  if (error || !conversationId) return { error: 'Unable to start conversation.' }
   revalidatePath('/app/messages')
-  return { conversationId: conversation.id }
+  return { conversationId }
 }
 
 export async function sendMessage(conversationId: string, content: string) {

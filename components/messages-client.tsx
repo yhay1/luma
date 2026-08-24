@@ -23,7 +23,7 @@ export function MessagesClient({ currentUserId, conversations, initialUserId }: 
 
   async function openChat(item: Conversation) {
     setError('')
-    router.replace(`/app/messages?user=${encodeURIComponent(item.userId)}`, { scroll: false })
+    router.push(`/app/messages?user=${encodeURIComponent(item.userId)}`, { scroll: false })
     if (item.conversationId) {
       setSelected(item)
       return
