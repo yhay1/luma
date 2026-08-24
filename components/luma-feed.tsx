@@ -17,7 +17,7 @@ type Post = {
   replies: Reply[]
 }
 
-type FeedProps = { posts: Post[]; email: string; profile: { username: string; display_name: string; avatar_path?: string | null; avatar_visible?: boolean } | null; statusRail?: React.ReactNode }
+type FeedProps = { posts: Post[]; email: string; profile: { username: string; display_name: string; avatar_path?: string | null; avatar_visible?: boolean } | null; unreadNotifications?: number; statusRail?: React.ReactNode }
 
 function relativeTime(date: string, now: number) {
   if (!now) return '…'
@@ -27,7 +27,7 @@ function relativeTime(date: string, now: number) {
   return `${Math.round(minutes / 1440)}d`
 }
 
-export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
+export function LumaFeed({ posts, email, profile, unreadNotifications = 0, statusRail }: FeedProps) {
   const [isPending, startTransition] = useTransition()
   const [now, setNow] = useState(0)
   useEffect(() => {
@@ -65,7 +65,7 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/settings"><Sparkles className="size-4" />Settings</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/explore"><Sparkles className="size-4" />Explore</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/messages"><MessageCircle className="size-4" />Messages</a>
-          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/notifications"><Bell className="size-4" />Notifications</a>
+          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/notifications"><Bell className="size-4" /><span className="flex-1">Notifications</span>{unreadNotifications > 0 && <span className="grid min-w-5 place-items-center rounded-full bg-primary px-1.5 py-0.5 text-[11px] text-primary-foreground">{unreadNotifications > 99 ? '99+' : unreadNotifications}</span>}</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href={profile ? `/app/profile/${profile.username}` : '#profile'}><UserRound className="size-4" />Profile</a>
         </nav>
         <main className="flex flex-col gap-5">
@@ -78,7 +78,7 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
         </main>
         <aside className="hidden self-start md:block"><div className="rounded-2xl bg-card p-5"><h2 className="text-lg font-semibold">Who to follow</h2><div className="mt-4 flex flex-col gap-4"><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid size-9 place-items-center rounded-full bg-muted font-medium">M</span><div><p className="text-sm font-medium">Maya Chen</p><p className="text-xs text-muted-foreground">@mayachen</p></div></div><button className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Follow</button></div><div className="flex items-center justify-between gap-3"><div className="flex items-center gap-2"><span className="grid size-9 place-items-center rounded-full bg-muted font-medium">J</span><div><p className="text-sm font-medium">Jon Bell</p><p className="text-xs text-muted-foreground">@jonbell</p></div></div><button className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground">Follow</button></div></div><button className="mt-5 text-sm text-primary hover:underline">Show more</button></div><div className="mt-4 px-2 text-xs leading-5 text-muted-foreground">About · Help · Privacy · Terms<br />© 2026 luma</div></aside>
       </div>
-      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-border bg-background/95 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden"><a href="/app" aria-label="Home" className="rounded-full p-3 text-primary"><Home className="size-5" /></a><a href="/app/search" aria-label="Search" className="rounded-full p-3 text-muted-foreground"><Search className="size-5" /></a><a href="/app/messages" aria-label="Messages" className="rounded-full p-3 text-muted-foreground"><MessageCircle className="size-5" /></a><a href="/app/notifications" aria-label="Notifications" className="rounded-full p-3 text-muted-foreground"><Bell className="size-5" /></a><a href="/app/settings" aria-label="Settings" className="rounded-full p-3 text-muted-foreground"><Sparkles className="size-5" /></a></nav>
+      <nav aria-label="Mobile navigation" className="fixed inset-x-0 bottom-0 z-20 flex items-center justify-around border-t border-border bg-background/95 px-3 py-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] backdrop-blur md:hidden"><a href="/app" aria-label="Home" className="rounded-full p-3 text-primary"><Home className="size-5" /></a><a href="/app/search" aria-label="Search" className="rounded-full p-3 text-muted-foreground"><Search className="size-5" /></a><a href="/app/messages" aria-label="Messages" className="rounded-full p-3 text-muted-foreground"><MessageCircle className="size-5" /></a><a href="/app/notifications" aria-label="Notifications" className="relative rounded-full p-3 text-muted-foreground"><Bell className="size-5" />{unreadNotifications > 0 && <span className="absolute right-1 top-1 grid min-w-4 place-items-center rounded-full bg-primary px-1 text-[9px] text-primary-foreground">{unreadNotifications > 9 ? '9+' : unreadNotifications}</span>}</a><a href="/app/settings" aria-label="Settings" className="rounded-full p-3 text-muted-foreground"><Sparkles className="size-5" /></a></nav>
     </div>
   )
 }

@@ -56,7 +56,7 @@ export async function updateNotificationPreferences(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Please sign in again.' }
-  const values = { user_id: user.id, likes: formData.get('likes') === 'on', follows: formData.get('follows') === 'on', messages: formData.get('messages') === 'on', updated_at: new Date().toISOString() }
+  const values = { user_id: user.id, likes: formData.get('likes') === 'on', follows: formData.get('follows') === 'on', messages: formData.get('messages') === 'on', comments: formData.get('comments') === 'on', friend_requests: formData.get('friend_requests') === 'on', status_views: formData.get('status_views') === 'on', updated_at: new Date().toISOString() }
   const { error } = await supabase.from('notification_preferences').upsert(values)
   return error ? { error: 'We could not save preferences.' } : { ok: true }
 }

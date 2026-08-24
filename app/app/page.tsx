@@ -8,10 +8,11 @@ export default async function AppPage() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  const [{ data: profile }, { data: posts }, { data: statuses }] = await Promise.all([
+  const [{ data: profile }, { data: posts }, { data: statuses }, { count: unreadCount }] = await Promise.all([
     supabase.from('profiles').select('username, display_name, avatar_path, avatar_visible').eq('id', user.id).maybeSingle(),
     supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(username, display_name, avatar_path, avatar_visible), post_likes(user_id), comments(id, content, created_at, author:profiles!comments_author_id_fkey(username, display_name, avatar_path, avatar_visible))').order('created_at', { ascending: false }).limit(20),
     supabase.from('statuses').select('id, image_path, caption, expires_at, author:profiles!statuses_author_id_fkey(id, username, display_name, avatar_path, avatar_visible), status_views(viewer_id)').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true }).limit(40),
+    supabase.from('notifications').select('id', { count: 'exact', head: true }).eq('user_id', user.id).is('read_at', null),
   ])
   const statusItems = await Promise.all((statuses ?? []).map(async (status) => {
     const author = Array.isArray(status.author) ? status.author[0] : status.author
@@ -27,5 +28,5 @@ export default async function AppPage() {
     return { id: post.id, content: post.content, created_at: post.created_at, author: author ?? { username: 'unknown', display_name: 'Unknown user' }, likes: likes.length, liked: likes.some((like) => like.user_id === user.id), replies: comments.map((comment) => { const replyAuthor = Array.isArray(comment.author) ? comment.author[0] : comment.author; return { id: comment.id, content: comment.content, created_at: comment.created_at, author: replyAuthor ?? { username: 'unknown', display_name: 'Unknown user' } } }) }
   })
 
-  return <LumaFeed posts={normalizedPosts} email={user.email ?? ''} profile={profile} statusRail={<StatusRail statuses={statusItems.filter((status) => status.url)} currentUserId={user.id} profile={profile} />} />
+  return <LumaFeed posts={normalizedPosts} email={user.email ?? ''} profile={profile} unreadNotifications={unreadCount ?? 0} statusRail={<StatusRail statuses={statusItems.filter((status) => status.url)} currentUserId={user.id} profile={profile} />} />
 }
