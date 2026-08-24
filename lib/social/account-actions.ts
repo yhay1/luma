@@ -5,6 +5,27 @@ import { createClient } from '@/lib/supabase/server'
 
 const clean = (value: unknown, max: number) => String(value ?? '').trim().slice(0, max)
 
+export async function updateAvatar(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Please sign in again.' }
+  const file = formData.get('avatar')
+  if (!(file instanceof File) || file.size > 5 * 1024 * 1024 || !['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) return { error: 'Choose a JPG, PNG, or WebP image up to 5 MB.' }
+  const path = `${user.id}/avatar-${Date.now()}.${file.type.split('/')[1]}`
+  const upload = await supabase.storage.from('avatars').upload(path, file, { contentType: file.type, upsert: false })
+  if (upload.error) return { error: 'We could not upload your avatar.' }
+  const { error } = await supabase.from('profiles').update({ avatar_path: path, updated_at: new Date().toISOString() }).eq('id', user.id)
+  return error ? { error: 'We could not save your avatar.' } : { ok: true }
+}
+
+export async function updateAvatarVisibility(formData: FormData) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user) return { error: 'Please sign in again.' }
+  const { error } = await supabase.from('profiles').update({ avatar_visible: formData.get('avatar_visible') === 'on', updated_at: new Date().toISOString() }).eq('id', user.id)
+  return error ? { error: 'We could not save avatar visibility.' } : { ok: true }
+}
+
 export async function updateProfile(formData: FormData) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()

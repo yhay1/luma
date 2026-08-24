@@ -9,8 +9,8 @@ export default async function MessagesPage() {
   const { data: memberships } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', user.id)
   const ids = (memberships ?? []).map((row) => row.conversation_id)
   const { data: conversations } = ids.length ? await supabase.from('conversation_members').select('conversation_id, user_id').in('conversation_id', ids).neq('user_id', user.id) : { data: [] }
-  const { data: profiles } = await supabase.from('profiles').select('id, username, display_name').neq('id', user.id).order('display_name')
+  const { data: profiles } = await supabase.from('profiles').select('id, username, display_name, avatar_path, avatar_visible').neq('id', user.id).order('display_name')
   const conversationByUser = new Map((conversations ?? []).map((row) => [row.user_id, row.conversation_id]))
-  const items = (profiles ?? []).map((profile) => ({ conversationId: conversationByUser.get(profile.id) ?? '', userId: profile.id, username: profile.username, displayName: profile.display_name }))
+  const items = (profiles ?? []).map((profile) => ({ conversationId: conversationByUser.get(profile.id) ?? '', userId: profile.id, username: profile.username, displayName: profile.display_name, avatarPath: profile.avatar_visible && profile.avatar_path ? supabase.storage.from('avatars').getPublicUrl(profile.avatar_path).data.publicUrl : null }))
   return <MessagesClient currentUserId={user.id} conversations={items} />
 }
