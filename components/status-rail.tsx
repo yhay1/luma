@@ -1,6 +1,6 @@
 'use client'
 
-import { useMemo, useRef, useState, useTransition } from 'react'
+import { useEffect, useMemo, useRef, useState, useTransition } from 'react'
 import { Camera, MoreVertical, Plus, Search, X } from 'lucide-react'
 import { StatusViewer } from './status-viewer'
 import { Avatar } from './avatar'
@@ -13,6 +13,7 @@ export function StatusRail({ statuses, profile }: { statuses: Status[]; currentU
   const [pending, startTransition] = useTransition(); const inputRef = useRef<HTMLInputElement>(null); const cameraRef = useRef<HTMLInputElement>(null)
   const groups = Object.values(statuses.reduce<Record<string, Status[]>>((acc, status) => ((acc[status.username] ??= []).push(status), acc), {}))
   const filtered = useMemo(() => groups.filter(group => `${group[0].displayName} ${group[0].username}`.toLowerCase().includes(query.toLowerCase())), [groups, query])
+  useEffect(() => { statuses.forEach((status) => { const image = new Image(); image.decoding = 'async'; image.src = status.url }) }, [statuses])
   const name = profile?.display_name || profile?.username || 'My status'
   function upload(file: File) { if (!file.type.startsWith('image/')) { setMessage('Choose an image file.'); return } const data = new FormData(); data.append('image', file); data.append('caption', caption); startTransition(async () => { const response = await fetch('/api/statuses', { method: 'POST', body: data }); const result = await response.json(); setMessage(result.error ?? 'Status shared.'); if (response.ok) window.location.reload() }) }
   function choose(input: HTMLInputElement) { const file = input.files?.[0]; if (file) upload(file); input.value = '' }
