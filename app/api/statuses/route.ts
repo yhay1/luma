@@ -22,23 +22,33 @@ export async function POST(request: Request) {
   if (!user) return NextResponse.json({ error: 'Please sign in first.' }, { status: 401 })
   if (!allowAction(`status:${user.id}`, 10, 60 * 60_000)) return NextResponse.json({ error: 'You have reached the Status limit for now.' }, { status: 429 })
   const form = await request.formData()
-  const file = form.get('image')
+  const files = form.getAll('image').filter((value): value is File => value instanceof File && value.size > 0)
   const caption = String(form.get('caption') ?? '').trim()
-  if (!(file instanceof File) || file.size === 0) return NextResponse.json({ error: 'Choose an image to share.' }, { status: 400 })
-  if (file.size > MAX_BYTES || !allowed.has(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name)) return NextResponse.json({ error: 'Use a JPEG, PNG, or WebP image under 5 MB.' }, { status: 400 })
+  const audience = String(form.get('audience') ?? 'everyone')
+  if (!['everyone', 'friends', 'selected', 'hidden'].includes(audience)) return NextResponse.json({ error: 'Invalid audience.' }, { status: 400 })
+  if (!files.length || files.length > 10) return NextResponse.json({ error: 'Choose between 1 and 10 images.' }, { status: 400 })
   if (caption.length > 280) return NextResponse.json({ error: 'Captions are limited to 280 characters.' }, { status: 400 })
-  const bytes = new Uint8Array(await file.arrayBuffer())
-  if (!matchesMagic(file.type, bytes)) return NextResponse.json({ error: 'That file is not a valid image.' }, { status: 400 })
-  const statusId = randomUUID()
-  const path = `${user.id}/${statusId}/original.${allowed.get(file.type)}`
-  const upload = await supabase.storage.from('statuses').upload(path, bytes, { contentType: file.type, upsert: false })
-  if (upload.error) return NextResponse.json({ error: 'We could not upload that image.' }, { status: 500 })
-  const { error } = await supabase.rpc('create_status', { p_image_path: path, p_caption: caption || null })
-  if (error) {
-    await supabase.storage.from('statuses').remove([path])
-    return NextResponse.json({ error: 'We could not create that Status.' }, { status: 500 })
+  const uploaded: string[] = []
+  try {
+    for (const file of files) {
+      if (file.size > MAX_BYTES || !allowed.has(file.type) || !/\.(jpe?g|png|webp)$/i.test(file.name)) throw new Error('Use a JPEG, PNG, or WebP image under 5 MB.')
+      const bytes = new Uint8Array(await file.arrayBuffer())
+      if (!matchesMagic(file.type, bytes)) throw new Error('That file is not a valid image.')
+      const statusId = randomUUID()
+      const path = `${user.id}/${statusId}/original.${allowed.get(file.type)}`
+      const upload = await supabase.storage.from('statuses').upload(path, bytes, { contentType: file.type, upsert: false })
+      if (upload.error) throw new Error('We could not upload that image.')
+      uploaded.push(path)
+      const { error } = await supabase.rpc('create_status', { p_image_path: path, p_caption: caption || null })
+      if (error) throw new Error('We could not create that Status.')
+      const { error: audienceError } = await supabase.from('statuses').update({ audience }).eq('image_path', path).eq('author_id', user.id)
+      if (audienceError) throw new Error('We could not save Status privacy.')
+    }
+    return NextResponse.json({ ok: true, count: uploaded.length })
+  } catch (error) {
+    if (uploaded.length) await supabase.storage.from('statuses').remove(uploaded)
+    return NextResponse.json({ error: error instanceof Error ? error.message : 'We could not create that Status.' }, { status: 400 })
   }
-  return NextResponse.json({ ok: true })
 }
 
 export async function DELETE(request: Request) {
