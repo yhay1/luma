@@ -63,7 +63,7 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
         <nav className="hidden flex-col gap-2 md:flex" aria-label="Primary navigation">
           <a className="flex items-center gap-3 rounded-xl bg-muted px-4 py-3 text-sm font-medium" href="/app"><Home className="size-4" />Home</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/settings"><Sparkles className="size-4" />Settings</a>
-          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/search"><Search className="size-4" />Discover</a>
+          <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/explore"><Sparkles className="size-4" />Explore</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/messages"><MessageCircle className="size-4" />Messages</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href="/app/notifications"><Bell className="size-4" />Notifications</a>
           <a className="flex items-center gap-3 rounded-xl px-4 py-3 text-sm text-muted-foreground hover:bg-muted" href={profile ? `/app/profile/${profile.username}` : '#profile'}><UserRound className="size-4" />Profile</a>
