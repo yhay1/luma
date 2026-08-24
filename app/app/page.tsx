@@ -9,8 +9,8 @@ export default async function AppPage() {
   if (!user) redirect('/auth/login')
 
   const [{ data: profile }, { data: posts }, { data: statuses }] = await Promise.all([
-    supabase.from('profiles').select('username, display_name').eq('id', user.id).maybeSingle(),
-    supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(username, display_name), post_likes(user_id), comments(id, content, created_at, author:profiles!comments_author_id_fkey(username, display_name))').order('created_at', { ascending: false }).limit(20),
+    supabase.from('profiles').select('username, display_name, avatar_path, avatar_visible').eq('id', user.id).maybeSingle(),
+    supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(username, display_name, avatar_path, avatar_visible), post_likes(user_id), comments(id, content, created_at, author:profiles!comments_author_id_fkey(username, display_name, avatar_path, avatar_visible))').order('created_at', { ascending: false }).limit(20),
     supabase.from('statuses').select('id, image_path, caption, expires_at, author:profiles!statuses_author_id_fkey(id, username, display_name), status_views(viewer_id)').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true }).limit(40),
   ])
   const statusItems = await Promise.all((statuses ?? []).map(async (status) => {

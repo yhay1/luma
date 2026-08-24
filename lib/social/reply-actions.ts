@@ -31,4 +31,4 @@ export async function deleteReply(commentId: string) {
   return { ok: true }
 }
 
-export type Reply = { id: string; content: string; created_at: string; author: { username: string; display_name: string } }
+export type Reply = { id: string; content: string; created_at: string; author: { username: string; display_name: string; avatar_path?: string | null; avatar_visible?: boolean } }
