@@ -1,0 +1,38 @@
+workflows:
+  android-apk:
+    name: Luma Android APK
+    max_build_duration: 30
+    instance_type: linux_x2
+    environment:
+      node: 22
+      java: 21
+      vars:
+        CAP_SERVER_URL: $CAP_SERVER_URL
+    scripts:
+      - name: Install dependencies
+        script: pnpm install --frozen-lockfile
+      - name: Configure production web URL
+        script: |
+          test -n "$CAP_SERVER_URL" || (echo "CAP_SERVER_URL is required" && exit 1)
+          python3 - <<'PY'
+          from pathlib import Path
+          p = Path('capacitor.config.ts')
+          s = p.read_text()
+          s = s.replace("process.env.CAP_SERVER_URL ?? 'https://YOUR-VERCEL-DOMAIN.vercel.app'", repr(__import__('os').environ['CAP_SERVER_URL']))
+          p.write_text(s)
+          PY
+      - name: Sync Capacitor Android
+        script: pnpm exec cap sync android
+      - name: Build unsigned APK
+        script: |
+          cd android
+          ./gradlew assembleDebug --no-daemon
+    artifacts:
+      - android/app/build/outputs/apk/debug/app-debug.apk
+    publishing:
+      email:
+        recipients:
+          - $CM_PUBLISH_EMAIL
+        notify:
+          success: true
+          failure: true
