@@ -8,11 +8,13 @@ export async function cleanupExpiredStatuses(supabase: CleanupClient) {
     .from('statuses')
     .select('id, image_path')
     .lte('expires_at', now)
-    .limit(25)
+    .order('expires_at', { ascending: true })
+    .limit(100)
 
-  for (const status of data ?? []) {
-    const storageResult = await supabase.storage.from('statuses').remove([status.image_path])
-    if (storageResult.error) continue
-    await supabase.from('statuses').delete().eq('id', status.id).lte('expires_at', now)
+  const statuses = data ?? []
+  const paths = statuses.map((status) => status.image_path)
+  if (paths.length) {
+    const storageResult = await supabase.storage.from('statuses').remove(paths)
+    if (!storageResult.error) await supabase.from('statuses').delete().in('id', statuses.map((status) => status.id)).lte('expires_at', now)
   }
 }

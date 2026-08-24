@@ -66,8 +66,9 @@ export async function searchProfiles(query: string, offset = 0) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Please sign in again.', profiles: [] }
   const q = query.trim().replace(/[%_]/g, '').slice(0, 40)
+  if (offset < 0 || offset > 1000) return { error: 'Search page is out of range.', profiles: [] }
   if (!q) return { profiles: [] }
-  const { data, error } = await supabase.from('profiles').select('id, username, display_name, bio').or(`username.ilike.%${q}%,display_name.ilike.%${q}%`).neq('id', user.id).order('display_name').range(offset, offset + 19)
+  const { data, error } = await supabase.from('profiles').select('id, username, display_name, bio').or(`username.ilike.%${q}%,display_name.ilike.%${q}%`).neq('id', user.id).order('display_name').range(Math.max(0, offset), Math.max(0, offset) + 11)
   return error ? { error: 'Search is unavailable right now.', profiles: [] } : { profiles: data ?? [] }
 }
 
@@ -76,8 +77,9 @@ export async function searchPosts(query: string, offset = 0) {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Please sign in again.', posts: [] }
   const q = query.trim().replace(/[%_]/g, '').slice(0, 80)
+  if (offset < 0 || offset > 1000) return { error: 'Search page is out of range.', posts: [] }
   if (!q) return { posts: [] }
-  const { data, error } = await supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(id, username, display_name, avatar_path, avatar_visible)').ilike('content', `%${q}%`).order('created_at', { ascending: false }).range(offset, offset + 19)
+  const { data, error } = await supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(id, username, display_name, avatar_path, avatar_visible)').ilike('content', `%${q}%`).order('created_at', { ascending: false }).range(Math.max(0, offset), Math.max(0, offset) + 11)
   const posts = (data ?? []).map((post) => ({ ...post, author: Array.isArray(post.author) ? post.author[0] : post.author }))
   return error ? { error: 'Search is unavailable right now.', posts: [] } : { posts }
 }
@@ -87,7 +89,7 @@ export async function getExploreData() {
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) return { error: 'Please sign in again.', posts: [], profiles: [] }
   const [{ data: posts }, { data: profiles }] = await Promise.all([
-    supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(id, username, display_name, avatar_path, avatar_visible), post_likes(count)').order('created_at', { ascending: false }).limit(30),
+    supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(id, username, display_name, avatar_path, avatar_visible), post_likes(count)').order('created_at', { ascending: false }).limit(20),
     supabase.from('profiles').select('id, username, display_name, bio, avatar_path, avatar_visible').neq('id', user.id).order('updated_at', { ascending: false }).limit(8),
   ])
   return { posts: (posts ?? []).map((post) => ({ ...post, author: Array.isArray(post.author) ? post.author[0] : post.author })), profiles: profiles ?? [] }
