@@ -9,7 +9,7 @@ import { markConversationRead, sendMessage, startConversation } from '@/lib/soci
 type Conversation = { conversationId: string; userId: string; username: string; displayName: string; avatarPath?: string | null }
 type Message = { id: string; conversation_id: string; sender_id: string; content: string; created_at: string }
 
-export function MessagesClient({ currentUserId, conversations }: { currentUserId: string; conversations: Conversation[] }) {
+export function MessagesClient({ currentUserId, conversations, initialUserId }: { currentUserId: string; conversations: Conversation[]; initialUserId?: string }) {
   const [selected, setSelected] = useState<Conversation | null>(null)
   const [messages, setMessages] = useState<Message[]>([])
   const [query, setQuery] = useState('')
@@ -17,6 +17,7 @@ export function MessagesClient({ currentUserId, conversations }: { currentUserId
   const [error, setError] = useState('')
   const [pending, startTransition] = useTransition()
   const filtered = useMemo(() => conversations.filter((item) => `${item.displayName} ${item.username}`.toLowerCase().includes(query.toLowerCase())), [conversations, query])
+  useEffect(() => { if (initialUserId) { const target = conversations.find((item) => item.userId === initialUserId); if (target) openChat(target) } }, [initialUserId, conversations])
 
   async function openChat(item: Conversation) {
     setError('')

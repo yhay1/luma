@@ -2,7 +2,8 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { MessagesClient } from '@/components/messages-client'
 
-export default async function MessagesPage() {
+export default async function MessagesPage({ searchParams }: { searchParams: Promise<{ user?: string }> }) {
+  const { user: requestedUserId } = await searchParams
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login?next=/app/messages')
@@ -12,5 +13,5 @@ export default async function MessagesPage() {
   const { data: profiles } = await supabase.from('profiles').select('id, username, display_name, avatar_path, avatar_visible').neq('id', user.id).order('display_name')
   const conversationByUser = new Map((conversations ?? []).map((row) => [row.user_id, row.conversation_id]))
   const items = (profiles ?? []).map((profile) => ({ conversationId: conversationByUser.get(profile.id) ?? '', userId: profile.id, username: profile.username, displayName: profile.display_name, avatarPath: profile.avatar_visible && profile.avatar_path ? supabase.storage.from('avatars').getPublicUrl(profile.avatar_path).data.publicUrl : null }))
-  return <MessagesClient currentUserId={user.id} conversations={items} />
+  return <MessagesClient currentUserId={user.id} conversations={items} initialUserId={requestedUserId} />
 }
