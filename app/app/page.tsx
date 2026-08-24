@@ -27,5 +27,5 @@ export default async function AppPage() {
     return { id: post.id, content: post.content, created_at: post.created_at, author: author ?? { username: 'unknown', display_name: 'Unknown user' }, likes: likes.length, liked: likes.some((like) => like.user_id === user.id), replies: comments.map((comment) => { const replyAuthor = Array.isArray(comment.author) ? comment.author[0] : comment.author; return { id: comment.id, content: comment.content, created_at: comment.created_at, author: replyAuthor ?? { username: 'unknown', display_name: 'Unknown user' } } }) }
   })
 
-  return <LumaFeed posts={normalizedPosts} email={user.email ?? ''} profile={profile} statusRail={<StatusRail statuses={statusItems.filter((status) => status.url)} currentUserId={user.id} />} />
+  return <LumaFeed posts={normalizedPosts} email={user.email ?? ''} profile={profile} statusRail={<StatusRail statuses={statusItems.filter((status) => status.url)} currentUserId={user.id} profile={profile} />} />
 }
