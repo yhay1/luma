@@ -15,7 +15,9 @@ export async function updateAvatar(formData: FormData) {
   const upload = await supabase.storage.from('avatars').upload(path, file, { contentType: file.type, upsert: false })
   if (upload.error) return { error: `We could not upload your avatar: ${upload.error.message}` }
   const { error } = await supabase.from('profiles').update({ avatar_path: path, updated_at: new Date().toISOString() }).eq('id', user.id)
-  return error ? { error: 'We could not save your avatar.' } : { ok: true }
+  if (error) return { error: 'We could not save your avatar.' }
+  revalidatePath('/app', 'layout')
+  return { ok: true }
 }
 
 export async function updateAvatarVisibility(formData: FormData) {

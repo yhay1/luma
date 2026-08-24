@@ -15,7 +15,7 @@ export async function startConversation(otherUserId: string) {
     const { data: match } = await supabase.from('conversation_members').select('conversation_id').in('conversation_id', ids).eq('user_id', otherUserId).maybeSingle()
     if (match) return { conversationId: match.conversation_id }
   }
-  const { data: conversation, error } = await supabase.from('conversations').insert({}).select('id').single()
+  const { data: conversation, error } = await supabase.from('conversations').insert({ created_by: user.id }).select('id').single()
   if (error || !conversation) return { error: 'Unable to start conversation.' }
   const { error: memberError } = await supabase.from('conversation_members').insert([{ conversation_id: conversation.id, user_id: user.id }, { conversation_id: conversation.id, user_id: otherUserId }])
   if (memberError) return { error: 'Unable to start conversation.' }
