@@ -29,6 +29,40 @@ export async function sendMessage(conversationId: string, content: string) {
   return { message }
 }
 
+export async function editMessage(messageId: string, content: string) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); const clean = boundedText(content, 2000)
+  if (!user || !isUuid(messageId) || !clean) return { error: 'Message must be between 1 and 2,000 characters.' }
+  const { data, error } = await supabase.from('messages').update({ content: clean, edited_at: new Date().toISOString() }).eq('id', messageId).eq('sender_id', user.id).is('deleted_at', null).select('id, content, edited_at').single()
+  return error || !data ? { error: 'Unable to edit message.' } : { message: data }
+}
+
+export async function deleteMessage(messageId: string, forEveryone = false) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(messageId)) return { error: 'Unable to delete message.' }
+  const update = forEveryone ? { content: 'This message was deleted', deleted_at: new Date().toISOString(), deleted_for_everyone: true } : { deleted_at: new Date().toISOString() }
+  const { error } = await supabase.from('messages').update(update).eq('id', messageId).eq('sender_id', user.id)
+  return error ? { error: 'Unable to delete message.' } : { ok: true }
+}
+
+export async function toggleReaction(messageId: string, emoji: string) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(messageId) || !/^.{1,16}$/u.test(emoji)) return { error: 'Unable to update reaction.' }
+  const { data: existing } = await supabase.from('message_reactions').select('message_id').eq('message_id', messageId).eq('user_id', user.id).eq('emoji', emoji).maybeSingle()
+  const result = existing ? await supabase.from('message_reactions').delete().match({ message_id: messageId, user_id: user.id, emoji }) : await supabase.from('message_reactions').insert({ message_id: messageId, user_id: user.id, emoji })
+  return result.error ? { error: 'Unable to update reaction.' } : { ok: true, active: !existing }
+}
+
+export async function createGroup(name: string, memberIds: string[]) {
+  const supabase = await createClient(); const { data: { user } } = await supabase.auth.getUser(); const clean = boundedText(name, 80)
+  const members = [...new Set(memberIds.filter(isUuid).filter((id) => id !== user?.id))].slice(0, 49)
+  if (!user || !clean) return { error: 'Add a group name.' }
+  const { data: conversation, error } = await supabase.from('conversations').insert({ name: clean, kind: 'group', created_by: user.id }).select('id').single()
+  if (error || !conversation) return { error: 'Unable to create group.' }
+  const { error: memberError } = await supabase.from('conversation_members').insert([{ conversation_id: conversation.id, user_id: user.id, role: 'owner' }, ...members.map((userId) => ({ conversation_id: conversation.id, user_id: userId, role: 'member' }))])
+  if (memberError) { await supabase.from('conversations').delete().eq('id', conversation.id); return { error: 'Unable to add group members.' } }
+  revalidatePath('/app/messages'); return { conversationId: conversation.id }
+}
+
 export async function markConversationRead(conversationId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
