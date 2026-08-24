@@ -54,6 +54,49 @@ export async function toggleFollow(followingId: string, following: boolean) {
   return { ok: true }
 }
 
+export async function sendFriendRequest(addresseeId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(addresseeId) || user.id === addresseeId) return { error: 'That action could not be saved.' }
+  const { data: blocked } = await supabase.from('user_blocks').select('blocker_id').or(`and(blocker_id.eq.${user.id},blocked_id.eq.${addresseeId}),and(blocker_id.eq.${addresseeId},blocked_id.eq.${user.id})`).limit(1)
+  if (blocked?.length) return { error: 'This connection is unavailable.' }
+  const { data, error } = await supabase.from('friendships').upsert({ requester_id: user.id, addressee_id: addresseeId, status: 'pending' }, { onConflict: 'requester_id,addressee_id' }).select('id').single()
+  if (error || !data) return { error: 'Unable to send friend request.' }
+  await supabase.from('notifications').insert({ user_id: addresseeId, actor_id: user.id, type: 'friend_request' })
+  revalidatePath('/app', 'layout')
+  return { ok: true }
+}
+
+export async function respondToFriendRequest(friendshipId: string, status: 'accepted' | 'declined') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(friendshipId)) return { error: 'That action could not be saved.' }
+  const { error } = await supabase.from('friendships').update({ status, updated_at: new Date().toISOString() }).eq('id', friendshipId).eq('addressee_id', user.id)
+  if (error) return { error: 'Unable to update friend request.' }
+  revalidatePath('/app', 'layout')
+  return { ok: true }
+}
+
+export async function respondToFriendRequestFromUser(requesterId: string, status: 'accepted' | 'declined') {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(requesterId)) return { error: 'That action could not be saved.' }
+  const { error } = await supabase.from('friendships').update({ status, updated_at: new Date().toISOString() }).eq('requester_id', requesterId).eq('addressee_id', user.id).eq('status', 'pending')
+  if (error) return { error: 'Unable to update friend request.' }
+  revalidatePath('/app', 'layout')
+  return { ok: true }
+}
+
+export async function removeFriend(friendshipId: string) {
+  const supabase = await createClient()
+  const { data: { user } } = await supabase.auth.getUser()
+  if (!user || !isUuid(friendshipId)) return { error: 'That action could not be saved.' }
+  const { error } = await supabase.from('friendships').delete().eq('id', friendshipId).or(`requester_id.eq.${user.id},addressee_id.eq.${user.id}`)
+  if (error) return { error: 'Unable to remove connection.' }
+  revalidatePath('/app', 'layout')
+  return { ok: true }
+}
+
 export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()

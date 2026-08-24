@@ -1,4 +1,4 @@
-const manifest = {
+const manifestData = {
   name: 'luma — your circle, closer',
   short_name: 'luma',
   description: 'A calmer social space for the people who matter.',
@@ -32,4 +32,6 @@ const manifest = {
   ],
 }
 
-export default manifest
+export default function manifest() {
+  return manifestData
+}
