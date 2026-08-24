@@ -43,7 +43,14 @@ export async function toggleFollow(followingId: string, following: boolean) {
     ? await supabase.from('follows').delete().eq('follower_id', user.id).eq('following_id', followingId)
     : await supabase.from('follows').insert({ follower_id: user.id, following_id: followingId })
   if (result.error) return { error: 'That action could not be saved.' }
+  if (!following) {
+    const { data: preferences } = await supabase.from('notification_preferences').select('follows').eq('user_id', followingId).maybeSingle()
+    if (preferences?.follows !== false) {
+      await supabase.from('notifications').insert({ user_id: followingId, actor_id: user.id, type: 'follow' })
+    }
+  }
   revalidatePath('/app', 'layout')
+  revalidatePath('/app/notifications')
   return { ok: true }
 }
 

@@ -8,7 +8,7 @@ import { isUuid, boundedText } from '@/lib/social/validation'
 export async function startConversation(otherUserId: string) {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
-  if (!user || user.id === otherUserId) return { error: 'Unable to start conversation.' }
+  if (!user || !isUuid(otherUserId) || user.id === otherUserId) return { error: 'Unable to start conversation.' }
   const { data: existing } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', user.id)
   const ids = (existing ?? []).map((row) => row.conversation_id)
   if (ids.length) {

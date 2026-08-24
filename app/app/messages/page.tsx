@@ -8,7 +8,9 @@ export default async function MessagesPage() {
   if (!user) redirect('/auth/login?next=/app/messages')
   const { data: memberships } = await supabase.from('conversation_members').select('conversation_id').eq('user_id', user.id)
   const ids = (memberships ?? []).map((row) => row.conversation_id)
-  const { data: conversations } = ids.length ? await supabase.from('conversation_members').select('conversation_id, user_id, profile:profiles!conversation_members_user_id_fkey(id, username, display_name)').in('conversation_id', ids).neq('user_id', user.id) : { data: [] }
-  const items = (conversations ?? []).map((row) => { const p = Array.isArray(row.profile) ? row.profile[0] : row.profile; return { conversationId: row.conversation_id, userId: row.user_id, username: p?.username ?? 'unknown', displayName: p?.display_name ?? 'Unknown user' } })
+  const { data: conversations } = ids.length ? await supabase.from('conversation_members').select('conversation_id, user_id').in('conversation_id', ids).neq('user_id', user.id) : { data: [] }
+  const { data: profiles } = await supabase.from('profiles').select('id, username, display_name').neq('id', user.id).order('display_name')
+  const conversationByUser = new Map((conversations ?? []).map((row) => [row.user_id, row.conversation_id]))
+  const items = (profiles ?? []).map((profile) => ({ conversationId: conversationByUser.get(profile.id) ?? '', userId: profile.id, username: profile.username, displayName: profile.display_name }))
   return <MessagesClient currentUserId={user.id} conversations={items} />
 }
