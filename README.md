@@ -15,7 +15,7 @@ luma is a text-first social app with a text-only feed, image-only 24-hour Status
 3. Start the app with `pnpm dev`.
 4. Run `pnpm exec tsc --noEmit` and `pnpm build` before deploying.
 
-Email confirmation is enabled by default in Supabase. Sign up through the app with a real mailbox, then confirm the email before using protected social actions. The app uses the Vercel preview redirect proxy for auth callbacks.
+Email confirmation is enabled by default in Supabase. Sign up through the app with a real mailbox, then confirm the email before using protected social actions. The app uses the Vercel preview redirect proxy for auth callbacks. Supabase sessions are stored in secure browser cookies and automatically refreshed; redeploying does not sign users out when they continue using the same stable production/custom domain. Cookies are domain-specific, so changing domains or clearing browser cookies requires signing in again.
 
 ## Supabase requirements
 

@@ -7,7 +7,8 @@ export async function GET(request: Request) {
   const next = url.searchParams.get('next')
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const { error } = await supabase.auth.exchangeCodeForSession(code)
+    if (error) return NextResponse.redirect(new URL(`/auth/login?error=${encodeURIComponent('Unable to confirm your session. Please try again.')}`, url.origin))
   }
   return NextResponse.redirect(new URL(next?.startsWith('/') ? next : '/app', url.origin))
 }
