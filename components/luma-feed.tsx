@@ -31,8 +31,7 @@ export function LumaFeed({ posts, email, profile, statusRail }: FeedProps) {
   const [now, setNow] = useState(0)
   useEffect(() => {
     setNow(Date.now())
-    const timer = window.setInterval(() => setNow(Date.now()), 60000)
-    return () => window.clearInterval(timer)
+    return undefined
   }, [])
   const [optimisticPosts, setOptimisticPosts] = useOptimistic(posts, (state, update: { id: string; liked: boolean }) => state.map((post) => post.id === update.id ? { ...post, liked: update.liked, likes: post.likes + (update.liked ? 1 : -1) } : post))
   const formRef = useRef<HTMLFormElement>(null)

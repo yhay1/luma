@@ -2,18 +2,16 @@ import { redirect } from 'next/navigation'
 import { createClient } from '@/lib/supabase/server'
 import { LumaFeed } from '@/components/luma-feed'
 import { StatusRail } from '@/components/status-rail'
-import { cleanupExpiredStatuses } from '@/lib/social/status-cleanup'
 
 export default async function AppPage() {
   const supabase = await createClient()
   const { data: { user } } = await supabase.auth.getUser()
   if (!user) redirect('/auth/login')
 
-  await cleanupExpiredStatuses(supabase)
   const [{ data: profile }, { data: posts }, { data: statuses }] = await Promise.all([
     supabase.from('profiles').select('username, display_name').eq('id', user.id).maybeSingle(),
     supabase.from('posts').select('id, content, created_at, author:profiles!posts_author_id_fkey(username, display_name), post_likes(user_id), comments(id, content, created_at, author:profiles!comments_author_id_fkey(username, display_name))').order('created_at', { ascending: false }).limit(20),
-    supabase.from('statuses').select('id, image_path, caption, expires_at, author:profiles!statuses_author_id_fkey(id, username, display_name), status_views(viewer_id)').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true }).limit(100),
+    supabase.from('statuses').select('id, image_path, caption, expires_at, author:profiles!statuses_author_id_fkey(id, username, display_name), status_views(viewer_id)').gt('expires_at', new Date().toISOString()).order('created_at', { ascending: true }).limit(40),
   ])
   const statusItems = await Promise.all((statuses ?? []).map(async (status) => {
     const author = Array.isArray(status.author) ? status.author[0] : status.author

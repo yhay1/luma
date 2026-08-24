@@ -30,11 +30,12 @@ export function MessagesClient({ currentUserId, conversations }: { currentUserId
 
   useEffect(() => {
     if (!selected?.conversationId) { setMessages([]); return }
-    const supabase = createClient(); let alive = true
-    supabase.from('messages').select('id, conversation_id, sender_id, content, created_at').eq('conversation_id', selected.conversationId).order('created_at', { ascending: true }).then(({ data }) => { if (alive) setMessages(data ?? []) })
-    markConversationRead(selected.conversationId)
-    const channel = supabase.channel(`messages:${selected.conversationId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${selected.conversationId}` }, (payload) => setMessages((current) => current.some((item) => item.id === payload.new.id) ? current : [...current, payload.new as Message])).subscribe()
-    return () => { alive = false; supabase.removeChannel(channel) }
+    const supabase = createClient(); let alive = true; let channel: ReturnType<typeof supabase.channel> | null = null
+    const load = async () => { const { data } = await supabase.from('messages').select('id, conversation_id, sender_id, content, created_at').eq('conversation_id', selected.conversationId).order('created_at', { ascending: true }).limit(200); if (alive) setMessages(data ?? []); await markConversationRead(selected.conversationId) }
+    const syncRealtime = () => { if (document.hidden || channel) return; channel = supabase.channel(`messages:${selected.conversationId}`).on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `conversation_id=eq.${selected.conversationId}` }, (payload) => setMessages((current) => current.some((item) => item.id === payload.new.id) ? current : [...current, payload.new as Message])).subscribe() }
+    const onVisibility = () => { if (!document.hidden) { syncRealtime(); load() } else if (channel) { supabase.removeChannel(channel); channel = null } }
+    load(); syncRealtime(); document.addEventListener('visibilitychange', onVisibility)
+    return () => { alive = false; document.removeEventListener('visibilitychange', onVisibility); if (channel) supabase.removeChannel(channel) }
   }, [selected?.conversationId])
 
   function submit(event: React.FormEvent) {
